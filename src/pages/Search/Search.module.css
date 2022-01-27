@@ -2,13 +2,13 @@
   max-width: 300px;
 }
 
-.center-vertically {
+.centerVertically {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 80vh;
 }
 
-.search-button {
+.searchButton {
   margin-left: 10px;
 }

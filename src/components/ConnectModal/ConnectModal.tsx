@@ -1,6 +1,6 @@
 import { useEffect } from "react"
 import { useConnect, useAccount } from "wagmi"
-import "./ConnectModal.css"
+import style from "./ConnectModal.module.css"
 
 interface IConnectModal {
   shouldShow: boolean

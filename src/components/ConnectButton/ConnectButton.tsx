@@ -1,5 +1,5 @@
 import { useAccount } from 'wagmi'
-import "./ConnectButton.css"
+import style from "./ConnectButton.module.css"
 import {truncateAddress} from "./../../utilities"
 
 interface IConnectButtonProps {
@@ -12,5 +12,5 @@ export const ConnectButton = ({onConnect}: IConnectButtonProps) => {
     fetchEns: true,
   })
 
-  return <button onClick={onConnect}>{!loading ? accountData ? accountData.ens?.name || truncateAddress(accountData.address) : "Connect" : "Loading..."}</button>
+  return <button style={style} onClick={onConnect}>{!loading ? accountData ? accountData.ens?.name || truncateAddress(accountData.address) : "Connect" : "Loading..."}</button>
 }

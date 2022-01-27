@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Logo } from '../Logo/Logo'
 import { ConnectButton } from '../ConnectButton/ConnectButton'
 import { ConnectModal } from '../ConnectModal/ConnectModal'
-import "./NavBar.css"
+import "./NavBar.module.css"
 
 export const NavBar = () => {
   const [connecting, setConnecting] = useState(false)
