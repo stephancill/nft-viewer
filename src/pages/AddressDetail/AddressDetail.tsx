@@ -5,23 +5,22 @@ import { useProvider } from "wagmi"
 import { truncateAddress } from "../../utilities"
 import { AssetItem, IAssetItem } from "../../components/AssetItem/AssetItem"
 import style from "./AddressDetail.module.css"
+import { TrackModal } from "../../components/TrackModal/TrackModal"
+import { GenericModal } from "../../components/GenericModal/GenericModal"
+import { ICollection } from "../../interfaces/ICollection"
 
 interface IUser {
   address: string
   displayName: string | null
 }
 
-interface ICollections {
-  collectionName: string
-  items: Array<IAssetItem>
-}
-
 export const AddressDetail = () => {
   const params = useParams()
   const provider = useProvider()
   const [user, setUser] = useState<IUser | null | undefined>(undefined)
-  const [collections, setCollections] = useState<Array<ICollections>>([])
+  const [collections, setCollections] = useState<Array<ICollection>>([])
   const [items, setItems] = useState<Array<IAssetItem>>([])
+  const [shouldShowTrackingModal, setShouldShowTrackingModal] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -52,28 +51,27 @@ export const AddressDetail = () => {
   useEffect(() => {
     if (collections.length === 0) {
       const allItems: Array<IAssetItem> = []
-      const collections: Array<ICollections> = [...new Array(10)].map((_, i) => {
-        const collectionName = `Collection ${i}`
+      const collections: Array<ICollection> = [...new Array(10)].map((_, i) => {
+        const collectionName = `Collection ${i}`;
+        [...new Array(2)].map((_, i) => {
+          const item = {
+            src: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/ThreeTimeAKCGoldWinnerPembrookeWelshCorgi.jpg/1920px-ThreeTimeAKCGoldWinnerPembrookeWelshCorgi.jpg",
+            tokenId: i+1,
+            collectionName: collectionName,
+            address: "0xCC78016816633528Dd4918746D7F016563Ce27FA"
+          }
+          allItems.push(item)
+        })
+
         return {
           collectionName,
-          items: [...new Array(2)].map((_, i) => {
-            const item = {
-              src: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/ThreeTimeAKCGoldWinnerPembrookeWelshCorgi.jpg/1920px-ThreeTimeAKCGoldWinnerPembrookeWelshCorgi.jpg",
-              tokenId: i+1,
-              collectionName: collectionName,
-              address: "0xCC78016816633528Dd4918746D7F016563Ce27FA"
-            }
-            allItems.push(item)
-            return item
-          })
+          address: "0xCC78016816633528Dd4918746D7F016563Ce27FA"
         }
       });
       setCollections(collections)
       setItems(allItems)
     }
-  }, [])
-
-
+  }) // TODO: Only fetch for new collections
 
   return <div>
     {user ? <>
@@ -87,6 +85,9 @@ export const AddressDetail = () => {
       }
       <div style={{marginTop: "20px", fontSize: "18px"}}>
         <div>Tracking {items.length} item{items.length > 1 ? "s" : ""} across {collections.length} collection{collections.length > 1 ? "s" : ""}</div>
+        <div>
+          <button onClick={() => setShouldShowTrackingModal(true)}>Add</button>
+        </div>
       </div>
       <div style={{marginTop: "20px"}}>
         {[...new Array(items.length)].map((_, index) => {
@@ -96,5 +97,8 @@ export const AddressDetail = () => {
       </>
     : user === undefined ? <div>Loading...</div> : <div>{params.searchQuery} not found</div>
     }
+    <GenericModal setShouldShow={setShouldShowTrackingModal} shouldShow={shouldShowTrackingModal} content={
+      <TrackModal/>
+    }></GenericModal>
   </div>
 }
