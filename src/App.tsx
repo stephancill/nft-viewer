@@ -1,25 +1,37 @@
-import React from 'react';
-import logo from './logo.svg';
 import './App.css';
 
+import { Provider, defaultChains } from 'wagmi'
+import { InjectedConnector } from 'wagmi/connectors/injected'
+import { WalletConnectConnector } from 'wagmi/connectors/walletConnect'
+
+import { Search } from './pages/Search';
+import { NavBar } from './components/NavBar/NavBar';
+
+const infuraId = process.env.REACT_APP_INFURA_PROJECT_ID
+const chains = defaultChains
+
+// Set up connectors
+const connectors = () => {
+  return [
+    new InjectedConnector({ chains }),
+    new WalletConnectConnector({
+      options: {
+        infuraId,
+        qrcode: true,
+      },
+    })
+  ]
+}
+
 function App() {
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Provider autoConnect connectors={connectors}>
+      <div className="App">
+        <NavBar/>
+        <Search/>
+      </div>
+    </Provider>
   );
 }
 

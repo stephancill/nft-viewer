@@ -1,0 +1,27 @@
+.fullscreen {
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  left: 0px;
+  top: 0px;
+}
+
+.modal {
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  width: 400px;
+  height: fit-content;
+  background-color: white;
+  margin-top: 100px;
+  z-index: 2;
+  position: relative;
+  padding: 20px;
+}
+
+.connect-button {
+  width: 100%;
+  margin-bottom: 10px;
+}
