@@ -1,0 +1,13 @@
+.heading {
+  margin-top: 40px;
+  font-size: 36px;
+  display: inline-block;
+}
+
+.subheading {
+  margin-left: 10px;
+  color: #878787;
+  font-size: 18px;
+  font-family: 'Roboto Mono', monospace;
+  display: inline-block;
+}
