@@ -3,11 +3,13 @@ import { useEffect, useState } from "react"
 import { useParams } from "react-router"
 import { useProvider } from "wagmi"
 import { truncateAddress } from "../../utilities"
-import { AssetItem, IAssetItem } from "../../components/AssetItem/AssetItem"
+import { IAssetItem } from "../../components/AssetItem/AssetItem"
 import style from "./AddressDetail.module.css"
 import { TrackModal } from "../../components/TrackModal/TrackModal"
 import { GenericModal } from "../../components/GenericModal/GenericModal"
 import { ICollection } from "../../interfaces/ICollection"
+import { AssetItemGrid } from "../../components/AssetItemGrid/AssetItemGrid"
+import { TokenList, TokenInfo } from "@uniswap/token-lists"
 
 interface IUser {
   address: string
@@ -18,7 +20,7 @@ export const AddressDetail = () => {
   const params = useParams()
   const provider = useProvider()
   const [user, setUser] = useState<IUser | null | undefined>(undefined)
-  const [collections, setCollections] = useState<Array<ICollection>>([])
+  const [tokenList, setTokenList] = useState<TokenList | undefined>(undefined)
   const [items, setItems] = useState<Array<IAssetItem>>([])
   const [shouldShowTrackingModal, setShouldShowTrackingModal] = useState(false)
 
@@ -49,29 +51,10 @@ export const AddressDetail = () => {
   }, [])
 
   useEffect(() => {
-    if (collections.length === 0) {
-      const allItems: Array<IAssetItem> = []
-      const collections: Array<ICollection> = [...new Array(10)].map((_, i) => {
-        const collectionName = `Collection ${i}`;
-        [...new Array(2)].map((_, i) => {
-          const item = {
-            src: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/ThreeTimeAKCGoldWinnerPembrookeWelshCorgi.jpg/1920px-ThreeTimeAKCGoldWinnerPembrookeWelshCorgi.jpg",
-            tokenId: i+1,
-            collectionName: collectionName,
-            address: "0xCC78016816633528Dd4918746D7F016563Ce27FA"
-          }
-          allItems.push(item)
-        })
-
-        return {
-          collectionName,
-          address: "0xCC78016816633528Dd4918746D7F016563Ce27FA"
-        }
-      });
-      setCollections(collections)
-      setItems(allItems)
+    if (!tokenList) {
+      // TODO: Get token list
     }
-  }) // TODO: Only fetch for new collections
+  }, [user])
 
   return <div>
     {user ? <>
@@ -84,15 +67,13 @@ export const AddressDetail = () => {
         </div> : <></>
       }
       <div style={{marginTop: "20px", fontSize: "18px"}}>
-        <div>Tracking {items.length} item{items.length > 1 ? "s" : ""} across {collections.length} collection{collections.length > 1 ? "s" : ""}</div>
+        <div>Tracking {items.length} item{items.length > 1 ? "s" : ""} across {tokenList?.tokens.length || 0} collection{tokenList?.tokens.length || 2 > 1 ? "s" : ""}</div>
         <div>
           <button onClick={() => setShouldShowTrackingModal(true)}>Add</button>
         </div>
       </div>
       <div style={{marginTop: "20px"}}>
-        {[...new Array(items.length)].map((_, index) => {
-          return <AssetItem style={{marginRight: "15px", marginBottom: "15px"}} key={index} {...items[index]}/>
-        })}
+        <AssetItemGrid items={items} />
       </div>
       </>
     : user === undefined ? <div>Loading...</div> : <div>{params.searchQuery} not found</div>
