@@ -2,6 +2,7 @@ import { HardhatUserConfig, task } from "hardhat/config"
 import '@typechain/hardhat'
 import "@nomiclabs/hardhat-waffle"
 import "@nomiclabs/hardhat-ethers"
+import "hardhat-deploy"
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -19,6 +20,11 @@ const config: HardhatUserConfig = {
     outDir: "types",
     target: "ethers-v5",
   },
+  namedAccounts: {
+    deployer: {
+      default: 0,
+    }
+  }
 }
 
 export default config
