@@ -15,6 +15,8 @@ import { Directory as DirectoryContract } from "../../../../backend/types"
 import { useDeployments } from "../../hooks/useDeployments"
 import { listTokensOfOwner } from '../../utils/tokenIdsByAddress'
 import { useStartIPFS } from '../../hooks/useStartIPFS'
+import { abi } from '../../abis/erc721'
+import { parseURI } from '../../utils/parseURI'
 
 interface IUser {
   address: string
@@ -48,6 +50,7 @@ export const AddressDetail = () => {
   const [canonicalTokenList, setCanonicalTokenList] = useState<TokenList | undefined>(undefined)
   const [items, setItems] = useState<Array<IAssetItem>>([])
   const [shouldShowTrackingModal, setShouldShowTrackingModal] = useState(false)
+  const [shouldShowRemoveTokens, setShouldShowRemoveTokens] = useState(false)
   const [shouldShowOverrideModal, setShouldShowOverrideModal] = useState(false)
   const [overrideURN, setOverrideURN] = useState("")
   const directoryContract = useContract<DirectoryContract>({
@@ -70,6 +73,20 @@ export const AddressDetail = () => {
     setShouldShowTrackingModal(false)
     setTokenList(newTokenList)
   }
+  
+  const onRemoveToken = (token: TokenInfo) => {
+    const newTokenList: TokenList = {
+      ...tokenList!,
+      tokens: tokenList!.tokens.filter(_token => _token.address !== token.address),
+      version: canonicalTokenList? {
+        ...canonicalTokenList.version,
+        patch: canonicalTokenList.version.patch + 1,
+      } : tokenList!.version
+    }
+    
+    setShouldShowTrackingModal(false)
+    setTokenList(newTokenList)
+  } 
 
   const publishTokenList = (tokenList: TokenList) => {
     // Publish to IPFS
@@ -83,10 +100,12 @@ export const AddressDetail = () => {
     (async () => {
       const result = await ipfs.add(data)
       // Store hash on-chain
-      await directoryContract.setList(`ipfs://${result.cid.toString()}`)
-      
-      // Force refresh
-      setTokenList(undefined) 
+      try {
+        const tx = await directoryContract.setList(`ipfs://${result.cid.toString()}`)
+        await tx.wait()
+        // Force refresh
+        setTokenList(undefined) 
+      } catch (error) {}
     })()
 
   }
@@ -163,12 +182,34 @@ export const AddressDetail = () => {
     if (tokenList) {
       console.log(tokenList);
       (async () => {
-        const tokens = await Promise.all(tokenList!.tokens.map(token => {
-          console.log(token.name)
+        const tokenIds = await Promise.all(tokenList!.tokens.map(token => {
           const tokenIds = listTokensOfOwner(token.address, user!.address, provider)
           return tokenIds
         }))
-        console.log(tokens)
+        console.log(tokenIds)
+        const nestedTokenURIs: Array<Array<string>> = await Promise.all(tokenList!.tokens.map((token, index) => {
+          const erc721Contract = new ethers.Contract(token.address, abi, signerData)
+          const ownedIds = tokenIds[index]
+          const tokenURIs = Promise.all(ownedIds.map(tokenId => {
+            return erc721Contract.tokenURI(tokenId) 
+          }))
+          return tokenURIs
+        }))
+
+        console.log(nestedTokenURIs)
+        const assets: Array<IAssetItem> = []
+        await Promise.all(nestedTokenURIs.map(async (tokenURIs, index) => {
+          return await Promise.all(tokenURIs.map(async (tokenURI, _index) => {
+            const src = await parseURI(tokenURI)
+            assets.push({
+              tokenInfo: tokenList!.tokens[index],
+              tokenId: tokenIds[index][_index],
+              src
+            })
+          }))
+        }))
+        console.log(assets)
+        setItems(assets)
       })()
     }
   }, [tokenList])
@@ -197,6 +238,10 @@ export const AddressDetail = () => {
                 : <></> 
             : <></>
             }
+            {tokenList && tokenList!.tokens.length > 0 ? 
+              <button onClick={() => setShouldShowRemoveTokens(true)}>Remove</button>
+              : <></>
+            }
             <button onClick={() => setShouldShowOverrideModal(true)}>Override</button>
           </div> 
           : <></>
@@ -219,9 +264,22 @@ export const AddressDetail = () => {
         <button onClick={() => {
           (async () => {
             console.log(overrideURN)
-            await directoryContract.setList(overrideURN)
+            try {
+              const tx = await directoryContract.setList(overrideURN)
+              await tx.wait()
+            } catch (error) {}
+            
           })()
         }}>Confirm</button>
+      </div>
+    }/>
+    <GenericModal setShouldShow={setShouldShowRemoveTokens} shouldShow={shouldShowRemoveTokens} content={
+      <div>
+        {
+          tokenList?.tokens.map(token => <div key={token.address}>
+            <button onClick={() => onRemoveToken(token)}>{token.name}</button>
+          </div>)
+        }
       </div>
     }/>
   </div>

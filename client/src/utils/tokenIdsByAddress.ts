@@ -1,4 +1,4 @@
-import { ethers } from "ethers"
+import { BigNumber, ethers } from "ethers"
 import { abi } from "../abis/erc721"
 
 function addressEqual(a: string, b: string) {
@@ -8,11 +8,11 @@ function addressEqual(a: string, b: string) {
 interface ITransferEventArgs {
   from: string,
   to: string,
-  tokenId: number
+  tokenId: BigNumber
 }
 
 // Source: https://github.com/frangio/erc721-list/blob/master/list.js
-export async function listTokensOfOwner(tokenAddress: string, account: string, provider: ethers.providers.BaseProvider) {
+export async function listTokensOfOwner(tokenAddress: string, account: string, provider: ethers.providers.BaseProvider): Promise<Array<number>> {
   const token = new ethers.Contract(
     tokenAddress,
     abi,
@@ -33,17 +33,17 @@ export async function listTokensOfOwner(tokenAddress: string, account: string, p
         a.transactionIndex - b.transactionIndex,
     )
 
-  const owned = new Set()
+  const owned = new Set<number>()
 
   logs.forEach(log => {
     const args = log.args as unknown as ITransferEventArgs
     const { from, to, tokenId } = args 
     if (addressEqual(to, account)) {
-      owned.add(tokenId.toString())
+      owned.add(tokenId.toNumber())
     } else if (addressEqual(from, account)) {
-      owned.delete(tokenId.toString())
+      owned.delete(tokenId.toNumber())
     }
   })
 
-  return owned
+  return Array.from(owned)
 }
