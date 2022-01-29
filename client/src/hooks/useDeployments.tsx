@@ -1,4 +1,4 @@
-import deployments from "../../deployments.json"
+import deployments from "../deployments.json"
 
 export const useDeployments = () => {  
   return deployments

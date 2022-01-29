@@ -1,30 +1,36 @@
 import style from "./TrackModal.module.css"
 import { useState, useEffect } from "react"
 import { ethers } from "ethers"
-import { ICollection } from "../../interfaces/ICollection"
-import { useContractRead, useProvider } from "wagmi"
+import { useProvider } from "wagmi"
+import { TokenInfo } from "@uniswap/token-lists"
+import { abi } from "../../abis/erc721"
 
-const abi = [
-  "function name() view returns (string memory)",
-  "function symbol() view returns (string memory)",
-  "function tokenURI(uint) view returns (string memory)"
-];
-
-interface IThumbnailCollection extends ICollection {
-  srcThumbnail: string
+interface ITrackModalProps {
+  onAddToken: (token: TokenInfo) => void
 }
 
-export const TrackModal = () => {
+export const TrackModal = ({onAddToken}: ITrackModalProps) => {
   const [searchQuery, setSearchQuery] = useState("")
-  const [collection, setCollection] = useState<IThumbnailCollection | undefined>(undefined)
+  const [tokenInfo, setTokenInfo] = useState<TokenInfo | undefined>(undefined)
+  const [error, setError] = useState<string|null>(null)
   const provider = useProvider()
 
   useEffect(() => {
     if (ethers.utils.isAddress(searchQuery.toLowerCase()) || (searchQuery.indexOf(".eth") > -1 && searchQuery.split(".eth")[1].length === 0)) {
       (async () => {
         const erc721 = new ethers.Contract(searchQuery, abi, provider)
-        const name = await erc721.name()
-        const uri = await erc721.tokenURI(1)
+        let name = "undefined"
+        let symbol = "undefined"
+        let uri = "undefined"
+        try {
+          name = await erc721.name()
+          symbol = await erc721.symbol()
+          uri = await erc721.tokenURI(1)
+        } catch (e) {
+          // TODO: Throw error
+          setError("Incompatible contract")
+        }
+        
         let src: string = uri
         if (uri.indexOf("data:application/json;base64,") === 0) {
           console.log(uri.split("data:application/json;base64,")[1])
@@ -45,26 +51,34 @@ export const TrackModal = () => {
           src = `https://ipfs.io/ipfs/${src.split("ipfs://")[1]}`
         }
 
-        const collection: IThumbnailCollection = {
-          address: searchQuery.toLowerCase(),
-          collectionName: name,
-          srcThumbnail: src
+        const tokenInfo: TokenInfo = {
+          address: ethers.utils.getAddress(searchQuery.toLowerCase()),
+          chainId: provider.network.chainId,
+          decimals: 0,
+          name: name,
+          symbol: symbol,
+          logoURI: src
         }
-        setCollection(collection)
+        setTokenInfo(tokenInfo)
       })()
+    } else {
+      setError(null)
+      setTokenInfo(undefined)
     }
-  }, [searchQuery])
+  }, [searchQuery, provider])
 
   return <div>
     <div className={style.heading}>Add Collection</div>
     <input className={style.searchInput} onChange={(e) => setSearchQuery(e.target.value)} type="text" placeholder="Search address or ENS" />
-    {collection ? 
+    {tokenInfo && !error ? 
     <div>
       {/* https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs */}
-      <img src={collection.srcThumbnail} alt="" />
-      {collection.collectionName}
+      <img src={tokenInfo.logoURI} alt="" />
+      {tokenInfo.name} {tokenInfo.symbol}
+      <button onClick={() => onAddToken(tokenInfo)}>Add</button>
     </div>
     : 
     <></>}
+    {error ? <div>{error}</div> : <></>}
   </div>
 }
