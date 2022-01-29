@@ -17,6 +17,7 @@ import { listTokensOfOwner } from '../../utils/tokenIdsByAddress'
 import { useStartIPFS } from '../../hooks/useStartIPFS'
 import { abi } from '../../abis/erc721'
 import { parseURI } from '../../utils/parseURI'
+import { ImportTokensModal } from '../../components/ImportTokensModal/ImportTokensModal'
 
 interface IUser {
   address: string
@@ -52,6 +53,7 @@ export const AddressDetail = () => {
   const [shouldShowTrackingModal, setShouldShowTrackingModal] = useState(false)
   const [shouldShowRemoveTokens, setShouldShowRemoveTokens] = useState(false)
   const [shouldShowOverrideModal, setShouldShowOverrideModal] = useState(false)
+  const [shouldShowImportModal, setShouldShowImportModal] = useState(false)
   const [overrideURN, setOverrideURN] = useState("")
   const directoryContract = useContract<DirectoryContract>({
     addressOrName: deployments["31337"]["localhost"].contracts["Directory"].address, // TODO: Use mainnet deployment
@@ -87,6 +89,23 @@ export const AddressDetail = () => {
     setShouldShowTrackingModal(false)
     setTokenList(newTokenList)
   } 
+
+  const onImportTokens = (tokens: Array<TokenInfo>) => {
+    const tokensToAdd: Array<TokenInfo> = []
+    tokens.forEach(token => {
+      if (tokenList?.tokens.filter(_token => _token.address === token.address).length === 0) {
+        tokensToAdd.push(token)
+      }
+    })
+    setTokenList({
+      ...tokenList!, 
+      tokens: [...tokenList!.tokens, ...tokensToAdd],
+      version: canonicalTokenList? {
+        ...canonicalTokenList.version,
+        patch: canonicalTokenList.version.patch + 1,
+      } : tokenList!.version
+    })
+  }
 
   const publishTokenList = (tokenList: TokenList) => {
     // Publish to IPFS
@@ -243,6 +262,7 @@ export const AddressDetail = () => {
               : <></>
             }
             <button onClick={() => setShouldShowOverrideModal(true)}>Override</button>
+            <button onClick={() => setShouldShowImportModal(true)}>Import</button>
           </div> 
           : <></>
         }
@@ -282,5 +302,10 @@ export const AddressDetail = () => {
         }
       </div>
     }/>
+
+    <GenericModal setShouldShow={setShouldShowImportModal} shouldShow={shouldShowImportModal} content={
+      <ImportTokensModal onImport={onImportTokens}/>
+    }/>
+
   </div>
 }

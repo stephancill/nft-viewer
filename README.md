@@ -29,7 +29,7 @@ yarn start
 
 - [ ] Token lists
   - [x] Create
-  - [ ] Generate/sync from OpenSea/Etherscan
+  - [x] Generate/sync from OpenSea/Etherscan
   - [x] Publish
   - [ ] Pinning
   - [x] Update
@@ -38,4 +38,7 @@ yarn start
     - [ ] Popular tokens
 - [x] Contract
   - [x] Store URI to [token list](https://github.com/Uniswap/token-lists)
-- [ ] Support ENS NFTs 
+- [ ] Token types
+  - [ ] Support ENS NFTs 
+  - [ ] ERC1155
+  - [x] ERC721
