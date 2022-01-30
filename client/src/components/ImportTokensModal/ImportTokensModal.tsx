@@ -68,16 +68,20 @@ export const ImportTokensModal = ({onImport}: IImportTokensModalProps) => {
 
   return <div>
     <button onClick={() => onSync()}>Sync</button>
-    <div className={style.heading}>Select Tokens</div>
     {
-      tokens?.map(token => <div key={token.address}>
+      tokens.length > 0 ? 
+      <div>
+        <div className={style.heading}>Select Tokens</div>
+        {tokens?.map(token => <div key={token.address}>
         <div>
-          {token.name}
-          <button onClick={() => onRemoveToken(token)}>Remove</button>
-        </div>
-      </div>) 
+            {token.name}
+            <button onClick={() => onRemoveToken(token)}>Remove</button>
+          </div>
+        </div>)}
+        <button onClick={() => onImport(tokens)}>Import</button>
+      </div> : <></>
     }
-    <button onClick={() => onImport(tokens)}>Import</button>
+    
     
   </div>
 }

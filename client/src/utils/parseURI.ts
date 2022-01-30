@@ -1,7 +1,6 @@
 export const parseURI = async (uri: string) => {
   let src: string = uri
   if (uri.indexOf("data:application/json;base64,") === 0) {
-    console.log(uri.split("data:application/json;base64,")[1])
     src = JSON.parse(atob(uri.split("data:application/json;base64,")[1])).image
   } else if (uri.indexOf("ipfs://") === 0) {
     const response = await fetch(`https://ipfs.io/ipfs/${uri.split("ipfs://")[1]}`) // TODO: use IPFS gateway

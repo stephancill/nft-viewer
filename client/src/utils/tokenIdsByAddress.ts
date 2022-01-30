@@ -1,4 +1,5 @@
 import { BigNumber, ethers } from "ethers"
+import { Provider } from "@ethersproject/abstract-provider";
 import { abi } from "../abis/erc721"
 
 function addressEqual(a: string, b: string) {
@@ -12,7 +13,7 @@ interface ITransferEventArgs {
 }
 
 // Source: https://github.com/frangio/erc721-list/blob/master/list.js
-export async function listTokensOfOwner(tokenAddress: string, account: string, provider: ethers.providers.BaseProvider): Promise<Array<number>> {
+export async function listTokensOfOwner(tokenAddress: string, account: string, provider: Provider): Promise<Array<number>> {
   const token = new ethers.Contract(
     tokenAddress,
     abi,

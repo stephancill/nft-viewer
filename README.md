@@ -3,10 +3,10 @@
 ## Local development
 ### Backend
 ```
-npx hardhat node
+FORK=mainnet npx hardhat node
 ```
 ```
-npx hardhat deploy --export-all ../client/src/deployments.json --network localhost
+FORK=mainnet npx hardhat deploy --export-all ../client/src/deployments.json --network localhost
 ```
 
 ### IPFS
@@ -24,6 +24,8 @@ ipfs daemon
 ```
 yarn start
 ```
+
+Connect to local node with chain ID 1.
 
 ## TODO
 

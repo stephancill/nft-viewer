@@ -42,7 +42,6 @@ const validate = ajv.compile(schema);
 export const AddressDetail = () => {
   const deployments = useDeployments()
   const params = useParams()
-  const provider = useProvider()
   const ipfs = useStartIPFS()
   const [{ data: signerData }] = useSigner()
   const [{ data: accountData }] = useAccount()
@@ -56,10 +55,11 @@ export const AddressDetail = () => {
   const [shouldShowImportModal, setShouldShowImportModal] = useState(false)
   const [overrideURN, setOverrideURN] = useState("")
   const directoryContract = useContract<DirectoryContract>({
-    addressOrName: deployments["31337"]["localhost"].contracts["Directory"].address, // TODO: Use mainnet deployment
-    contractInterface: deployments["31337"]["localhost"].contracts["Directory"].abi,
+    addressOrName: deployments["1"]["localhost"].contracts["Directory"].address, // TODO: Use mainnet deployment
+    contractInterface: deployments["1"]["localhost"].contracts["Directory"].abi,
     signerOrProvider: signerData
   })
+
 
   const onAddToken = (token: TokenInfo) => {
     const newTokenList = {...tokenList!}
@@ -105,6 +105,7 @@ export const AddressDetail = () => {
         patch: canonicalTokenList.version.patch + 1,
       } : tokenList!.version
     })
+    setShouldShowImportModal(false)
   }
 
   const publishTokenList = (tokenList: TokenList) => {
@@ -130,11 +131,12 @@ export const AddressDetail = () => {
   }
 
   useEffect(() => {
+    if (!signerData || (signerData && signerData.provider === undefined)) return
     (async () => {
       const searchQuery = params.searchQuery || ""
       if (user === undefined) {
         if (searchQuery.indexOf(".eth") > -1 && searchQuery.split(".eth")[1] === "") {
-          const address = await provider.resolveName(searchQuery.toLowerCase())
+          const address = await signerData!.provider!.resolveName(searchQuery.toLowerCase())
           if (!address) {
             setUser(null)
           } else {
@@ -145,7 +147,7 @@ export const AddressDetail = () => {
           }
           
         } else if (ethers.utils.isAddress(searchQuery.toLowerCase())) {
-          const displayName = await provider.lookupAddress(searchQuery.toLowerCase())
+          const displayName = await signerData!.provider!.lookupAddress(searchQuery.toLowerCase())
           setUser({
             displayName,
             address: searchQuery
@@ -153,10 +155,10 @@ export const AddressDetail = () => {
         }
       }
     })()
-  }, [])
+  }, [signerData])
 
   useEffect(() => {
-    if (!tokenList && user) {
+    if (!tokenList && user && signerData) {
       (async () => {
         const uri = await directoryContract.listURIs(user!.address)
         if (uri.length === 0) {
@@ -202,7 +204,7 @@ export const AddressDetail = () => {
       console.log(tokenList);
       (async () => {
         const tokenIds = await Promise.all(tokenList!.tokens.map(token => {
-          const tokenIds = listTokensOfOwner(token.address, user!.address, provider)
+          const tokenIds = listTokensOfOwner(token.address, user!.address, signerData!.provider!)
           return tokenIds
         }))
         console.log(tokenIds)
@@ -215,7 +217,6 @@ export const AddressDetail = () => {
           return tokenURIs
         }))
 
-        console.log(nestedTokenURIs)
         const assets: Array<IAssetItem> = []
         await Promise.all(nestedTokenURIs.map(async (tokenURIs, index) => {
           return await Promise.all(tokenURIs.map(async (tokenURI, _index) => {
@@ -227,11 +228,15 @@ export const AddressDetail = () => {
             })
           }))
         }))
-        console.log(assets)
+        console.log("Fetched assets")
         setItems(assets)
       })()
     }
   }, [tokenList])
+
+  if (!signerData) {
+    return <div>Connect wallet to continue</div>
+  }
 
   return <div>
     {user ? <>
