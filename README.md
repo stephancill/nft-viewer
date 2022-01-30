@@ -9,6 +9,8 @@ FORK=mainnet npx hardhat node
 FORK=mainnet npx hardhat deploy --export-all ../client/src/deployments.json --network localhost
 ```
 
+Optionally include `OPEN=true` to deploy open Directory, which allows editing of any address' list by any other address.
+
 ### IPFS
 Prerequisite: https://docs.ipfs.io/how-to/command-line-quick-start
 
@@ -44,3 +46,4 @@ Connect to local node with chain ID 1.
   - [ ] Support ENS NFTs 
   - [ ] ERC1155
   - [x] ERC721
+- [ ] Separate asset and Directory networks

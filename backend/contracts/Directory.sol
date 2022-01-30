@@ -4,7 +4,14 @@ pragma solidity ^0.8.0;
 contract Directory {
     mapping(address => string) public listURIs;
 
-    function setList(string memory _listURI) public {
-        listURIs[msg.sender] = _listURI;
+    bool public isOpen;
+
+    constructor(bool _isOpen) {
+        isOpen = _isOpen;
+    }
+
+    function setListForAddress(address _address, string memory _listURI) public {
+        require(_address == msg.sender || isOpen, "Contract is not open");
+        listURIs[_address] = _listURI;
     }
 }

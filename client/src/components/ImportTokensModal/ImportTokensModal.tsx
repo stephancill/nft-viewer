@@ -1,6 +1,7 @@
 import { TokenInfo } from "@uniswap/token-lists"
 import { useState } from "react"
 import { useAccount } from "wagmi"
+import { IUser } from "../../interfaces/IUser"
 import style from "./ImportTokensModal.module.css"
 
 interface IMoralisRequest {
@@ -21,13 +22,14 @@ interface MoralisToken {
 
 interface IImportTokensModalProps {
   onImport: (tokens: Array<TokenInfo>) => void
+  user: IUser
 }
 
 function formatMoralisRequest({address, chain, method}: IMoralisRequest): string {
   return `https://deep-index.moralis.io/api/v2/${address}/${method}?format=decimal&chain=${chain}`
 }
 
-export const ImportTokensModal = ({onImport}: IImportTokensModalProps) => {
+export const ImportTokensModal = ({onImport, user}: IImportTokensModalProps) => {
   const [{ data: accountData, loading }] = useAccount()
   const [tokens, setTokens] = useState<Array<TokenInfo>>([])
 
@@ -35,7 +37,7 @@ export const ImportTokensModal = ({onImport}: IImportTokensModalProps) => {
     const headers = new Headers()
     headers.append("X-API-Key", process.env.REACT_APP_MORALIS_API_KEY!)
     const res = await fetch(formatMoralisRequest({
-      address: accountData!.address,
+      address: user.address,
       chain: "eth",
       method: "nft"
     }), {
@@ -66,7 +68,7 @@ export const ImportTokensModal = ({onImport}: IImportTokensModalProps) => {
     setTokens(tokens?.filter(token => token.address !== rawToken.address))
   }
 
-  return <div>
+  return <div style={{maxHeight: "50vh", overflow: "scroll"}}>
     <button onClick={() => onSync()}>Sync</button>
     {
       tokens.length > 0 ? 

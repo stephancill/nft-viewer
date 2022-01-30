@@ -3,7 +3,7 @@ import addFormats from "ajv-formats"
 import { ethers } from "ethers"
 import { useEffect, useState } from "react"
 import { useParams } from "react-router"
-import { useAccount, useContract, useProvider, useSigner } from "wagmi"
+import { useAccount, useContract, useContractRead, useProvider, useSigner } from "wagmi"
 import { truncateAddress } from "../../utilities"
 import { IAssetItem } from "../../components/AssetItem/AssetItem"
 import style from "./AddressDetail.module.css"
@@ -18,11 +18,7 @@ import { useStartIPFS } from '../../hooks/useStartIPFS'
 import { abi } from '../../abis/erc721'
 import { parseURI } from '../../utils/parseURI'
 import { ImportTokensModal } from '../../components/ImportTokensModal/ImportTokensModal'
-
-interface IUser {
-  address: string
-  displayName: string | null
-}
+import { IUser } from '../../interfaces/IUser'
 
 const defaultTokenList: TokenList = {
   name: "Port List",
@@ -54,12 +50,8 @@ export const AddressDetail = () => {
   const [shouldShowOverrideModal, setShouldShowOverrideModal] = useState(false)
   const [shouldShowImportModal, setShouldShowImportModal] = useState(false)
   const [overrideURN, setOverrideURN] = useState("")
-  const directoryContract = useContract<DirectoryContract>({
-    addressOrName: deployments["1"]["localhost"].contracts["Directory"].address, // TODO: Use mainnet deployment
-    contractInterface: deployments["1"]["localhost"].contracts["Directory"].abi,
-    signerOrProvider: signerData
-  })
-
+  const [directoryContract, setDirectoryContract] = useState<DirectoryContract | undefined>(undefined)
+  const [isDirectoryOpen, setIsDirectoryOpen] = useState(false)
 
   const onAddToken = (token: TokenInfo) => {
     const newTokenList = {...tokenList!}
@@ -110,6 +102,7 @@ export const AddressDetail = () => {
 
   const publishTokenList = (tokenList: TokenList) => {
     // Publish to IPFS
+    console.log("hello")
     if (!ipfs) {
       console.error("no ipfs")
       // TODO: Handle this
@@ -118,10 +111,11 @@ export const AddressDetail = () => {
     const data = JSON.stringify(tokenList);
 
     (async () => {
+      console.log("adding file to ipfs", Buffer.from(data).length, "bytes")
       const result = await ipfs.add(data)
       // Store hash on-chain
       try {
-        const tx = await directoryContract.setList(`ipfs://${result.cid.toString()}`)
+        const tx = await directoryContract!.setListForAddress(user!.address, `ipfs://${result.cid.toString()}`)
         await tx.wait()
         // Force refresh
         setTokenList(undefined) 
@@ -159,8 +153,21 @@ export const AddressDetail = () => {
 
   useEffect(() => {
     if (!tokenList && user && signerData) {
+      if (!directoryContract) {
+        const _directoryContract = new ethers.Contract(
+          deployments["1"]["localhost"].contracts["Directory"].address, // TODO: Use mainnet deployment
+          deployments["1"]["localhost"].contracts["Directory"].abi,
+          signerData
+        )
+        setDirectoryContract(_directoryContract as DirectoryContract)
+        return
+      }
+
       (async () => {
-        const uri = await directoryContract.listURIs(user!.address)
+        console.log("async part")
+        const _isDirectoryOpen = await directoryContract.isOpen()
+        setIsDirectoryOpen(_isDirectoryOpen)
+        const uri = await directoryContract!.listURIs(user!.address)
         if (uri.length === 0) {
           setTokenList(defaultTokenList)
           return
@@ -239,6 +246,7 @@ export const AddressDetail = () => {
   }
 
   return <div>
+    {isDirectoryOpen ? isDirectoryOpen?.toString() : "undefined"}
     {user ? <>
       <div className={style.heading}>
         {user.displayName || truncateAddress(user.address)}
@@ -250,7 +258,7 @@ export const AddressDetail = () => {
       }
       <div style={{marginTop: "20px", fontSize: "18px"}}>
         <div>Tracking {items.length} item{items.length === 1 ? "" : "s"} across {tokenList?.tokens.length || 0} collection{(tokenList?.tokens.length || 2) === 1 ? "" : "s"}</div>
-        {user.address === accountData?.address ? 
+        {user.address === accountData?.address || isDirectoryOpen ? 
           <div>
             <button onClick={() => setShouldShowTrackingModal(true)}>Add</button>
             {tokenList && tokenList!.tokens.length > 0 ? 
@@ -290,7 +298,7 @@ export const AddressDetail = () => {
           (async () => {
             console.log(overrideURN)
             try {
-              const tx = await directoryContract.setList(overrideURN)
+              const tx = await directoryContract!.setListForAddress(user!.address, overrideURN)
               await tx.wait()
             } catch (error) {}
             
@@ -309,7 +317,7 @@ export const AddressDetail = () => {
     }/>
 
     <GenericModal setShouldShow={setShouldShowImportModal} shouldShow={shouldShowImportModal} content={
-      <ImportTokensModal onImport={onImportTokens}/>
+      <ImportTokensModal onImport={onImportTokens} user={user!}/>
     }/>
 
   </div>
